@@ -12,4 +12,4 @@ y = Flux.onehotbatch(train_data.targets, 0:9)
 x = x[:, :, 1:5000]
 y = y[:, 1:5000]
 
-train(x, y', 4)
+train(x, y', 3)

@@ -62,7 +62,7 @@ backward(::BroadcastedOperator{typeof(sum)}, x, g) =
     let
         𝟏 = 
         J = 𝟏'
-        tuple(ones(length(x))'' * g)
+        tuple(ones(length(x)) * g)
     end
 
 Base.Broadcast.broadcasted(/, x::GraphNode, y::GraphNode) = BroadcastedOperator(/, x, y)
