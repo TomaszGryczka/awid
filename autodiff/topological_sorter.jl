@@ -42,9 +42,6 @@ function forward!(order::Vector)
         compute!(node)
         reset!(node)
     end
-    # for node in order
-    #     println("chuj", node.output)
-    # end
     return last(order).output
 end
 
