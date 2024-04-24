@@ -9,7 +9,7 @@ x = reshape(train_data.features, 28, 28, :)
 y = Flux.onehotbatch(train_data.targets, 0:9)
 
 # reduce number of samples for testing
-x = x[:, :, 1:500]
-y = y[:, 1:500]
+x = x[:, :, 1:5000]
+y = y[:, 1:5000]
 
-train(x, y', 100)
+train(x, y', 4)

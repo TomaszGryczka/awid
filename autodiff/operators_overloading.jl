@@ -112,6 +112,6 @@ backward(node::BroadcastedOperator{typeof(maxpool2d)}, x, g) =
         tuple(output)
     end
 
-dense(x::GraphNode, w::GraphNode, b::GraphNode) = BroadcastedOperator(dense, x, w, b)
-forward(::BroadcastedOperator{typeof(dense)}, x, w, b) = w * x
-backward(::BroadcastedOperator{typeof(dense)}, x, w, b, g) = tuple(w' * g, g * x', g)
+dense(x::GraphNode, w::GraphNode) = BroadcastedOperator(dense, x, w)
+forward(::BroadcastedOperator{typeof(dense)}, x, w) = w * x
+backward(::BroadcastedOperator{typeof(dense)}, x, w, g) = tuple(w' * g, g * x', g)

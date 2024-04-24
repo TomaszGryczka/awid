@@ -20,5 +20,5 @@ function init_weights()
     l2_hidden_weight = Variable(randn(10, 84), name = "wo");
     l2_hidden_bias = Variable(initialize_uniform_bias(84, 10));
 
-    return kernel_weight, l1_hidden_weight, l1_hidden_bias, l2_hidden_weight, l2_hidden_bias
+    return kernel_weight, l1_hidden_weight, l2_hidden_weight
 end

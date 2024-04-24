@@ -28,10 +28,10 @@ backward(node::BroadcastedOperator{typeof(cross_entropy_loss)}, y_hat, y, g) =
 
 
 # too l2 is not second layer
-function build_graph(x, y, kernel_weight, l1_hidden_weight, l1_hidden_bias, l2_hidden_weight, l2_hidden_bias)
+function build_graph(x, y, kernel_weight, l1_hidden_weight, l2_hidden_weight)
 	con = convolution(x, kernel_weight) |> relu |> maxpool2d |> flatten
-	l1 = dense(con, l1_hidden_weight, l1_hidden_bias) |> relu
-	l2 = dense(l1, l2_hidden_weight, l2_hidden_bias)
+	l1 = dense(con, l1_hidden_weight) |> relu
+	l2 = dense(l1, l2_hidden_weight)
 	e = cross_entropy_loss(l2, y)
 	return topological_sort(e)
 end
@@ -49,7 +49,7 @@ num_of_correct_clasiffications = 0
 num_of_clasiffications = 0
 
 function train(x, y, epochs)
-	kernel_weight, l1_hidden_weight, l1_hidden_bias, l2_hidden_weight, l2_hidden_bias = init_weights()
+	kernel_weight, l1_hidden_weight, l2_hidden_weight = init_weights()
 
 	for i=1:epochs
 		
@@ -60,7 +60,7 @@ function train(x, y, epochs)
 		for j=1:size(x, 3)
 			train_x = Constant(x[:, :, j])
 			train_y = Constant(y[j, :])
-			graph = build_graph(train_x, train_y, kernel_weight, l1_hidden_weight, l1_hidden_bias, l2_hidden_weight, l2_hidden_bias)
+			graph = build_graph(train_x, train_y, kernel_weight, l1_hidden_weight, l2_hidden_weight)
 	
 			epoch_loss += forward!(graph) / size(x, 3)
 			backward!(graph)
