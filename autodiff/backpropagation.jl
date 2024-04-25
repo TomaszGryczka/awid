@@ -1,10 +1,15 @@
 update!(node::Constant, gradient) = nothing
-update!(node::GraphNode, gradient) =
-    if isnothing(node.gradient)
-        node.gradient = gradient
-    else
-        node.gradient .+= gradient
+update!(node::GraphNode, gradient) = let
+    node.gradient = gradient
+    if typeof(node) == Variable
+        if isnothing(node.batch_gradient)
+            node.batch_gradient = gradient
+        else
+            node.batch_gradient += gradient
+        end
     end
+    
+end
 
 function backward!(node::Constant) end
 function backward!(node::Variable) end

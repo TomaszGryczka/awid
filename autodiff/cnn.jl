@@ -1,7 +1,7 @@
 include("topological_sorter.jl")
 include("conv_operation.jl")
 include("weight_utils.jl")
-include("backward.jl")
+include("backpropagation.jl")
 include("forward.jl")
 
 using LinearAlgebra
@@ -40,11 +40,12 @@ function build_graph(x, y, kernel_weights, hidden_weights, output_weights)
 	return topological_sort(e)
 end
 
-function update_weights!(graph::Vector, lr::Float64)
+function update_weights!(graph::Vector, lr::Float64, batch_size::Int64)
     for node in graph
         if isa(node, Variable) && hasproperty(node, :gradient)
-            node.output -= lr * node.gradient
-            node.gradient .= 0
+			node.batch_gradient ./= batch_size
+            node.output -= lr * node.batch_gradient 
+            node.batch_gradient .= 0
         end
     end
 end
@@ -52,7 +53,7 @@ end
 num_of_correct_clasiffications = 0
 num_of_clasiffications = 0
 
-function train(x, y, epochs)
+function train(x, y, epochs, batch_size, learining_rate)
 	kernel_weights, hidden_weights, output_weights = init_weights()
 
 	for i=1:epochs
@@ -66,14 +67,18 @@ function train(x, y, epochs)
 		for j=1:num_of_samples
 			train_x = Constant(x[:, :, j])
 			train_y = Constant(y[j, :])
+
 			graph = build_graph(train_x, train_y, kernel_weights, hidden_weights, output_weights)
 	
-			epoch_loss += (forward!(graph) / num_of_samples)
+			epoch_loss += forward!(graph)
 			backward!(graph)
-			update_weights!(graph, 1e-4)
+			
+			if j % batch_size == 0
+				update_weights!(graph, learining_rate, batch_size)
+			end
 		end
 		
-		println("Epoka: ", i,". Strata: ", epoch_loss)
+		println("Epoka: ", i,". Średnia strata dla epoki: ", epoch_loss  / num_of_samples)
 		println("Dokładność: ", num_of_correct_clasiffications/num_of_clasiffications, " (rozpoznano ", num_of_correct_clasiffications, "/", num_of_clasiffications, ")\n")
 	end
 end

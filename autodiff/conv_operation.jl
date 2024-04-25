@@ -3,14 +3,17 @@ include("graph_nodes.jl")
 convolution(x::GraphNode, kernel::GraphNode) = BroadcastedOperator(convolution, x, kernel)
 forward(::BroadcastedOperator{typeof(convolution)}, x, w) =
     let
-        # default values 
-        # NOTE: Should be same as in backward
         padding = 0
         stride = 1
         # get dimensions
         # println("conv ?? x: ", size(x), " w: ", size(w))
-        a, b = size(x)
-        x1 = reshape(x, a , b, 1, 1)
+        if ndims(x)==3
+            a, b, c = size(x)
+            x1 = reshape(x, a , b, c, 1)
+        else
+            a, b = size(x)
+            x1 = reshape(x, a , b, 1, 1)
+        end
         (H, W, C, _) = size(x1)
         (FH, FW, _, K) = size(w)
 
@@ -47,12 +50,15 @@ forward(::BroadcastedOperator{typeof(convolution)}, x, w) =
 
 backward(::BroadcastedOperator{typeof(convolution)}, x, w, g) =
     let
-        # default values 
-        # NOTE: Should be same as in forward
         padding = 0
         stride = 1
-        a, b = size(x)
-        x1 = reshape(x, a , b, 1, 1)
+        if ndims(x)==3
+            a, b, c = size(x)
+            x1 = reshape(x, a , b, c, 1)
+        else
+            a, b = size(x)
+            x1 = reshape(x, a , b, 1, 1)
+        end
         # get dimensions
         (H, W, C, _) = size(x1)
         (FH, FW, _, K) = size(w)

@@ -15,24 +15,12 @@ relu(x::GraphNode) = BroadcastedOperator(relu, x)
 forward(::BroadcastedOperator{typeof(relu)}, x) = return max.(x, zero(x))
 backward(::BroadcastedOperator{typeof(relu)}, x, g) = return tuple(g .* (x .> 0))
 
-linear(x::GraphNode) = BroadcastedOperator(linear, x)
-forward(::BroadcastedOperator{typeof(linear)}, x) = x
-backward(::BroadcastedOperator{typeof(linear)}, x, g) = tuple(g)
-
-logistic(x::GraphNode) = BroadcastedOperator(logistic, x)
-forward(::BroadcastedOperator{typeof(logistic)}, x) = 1 ./ (1 .+ exp.(-x))
-function backward(::BroadcastedOperator{typeof(logistic)}, x, g)
-    return tuple(g .* exp.(x) ./ (1 .+ exp.(x)) .^ 2)
-end
 
 log(x::GraphNode) = ScalarOperator(log, x)
 forward(::ScalarOperator{typeof(log)}, x) = log(x)
 backward(::ScalarOperator{typeof(log)}, x, gradient) = (gradient / x)
 
-reshape(x::GraphNode, new_size::GraphNode) = let 
-    # println(x.name, " = ", x.size, ">>>", new_size.name)
-    BroadcastedOperator(reshape, x, new_size)
-end
+reshape(x::GraphNode, new_size::GraphNode) = BroadcastedOperator(reshape, x, new_size)
 
 flatten(x::GraphNode) = BroadcastedOperator(flatten, x)
 forward(::BroadcastedOperator{typeof(flatten)}, x) = reshape(x, length(x))
