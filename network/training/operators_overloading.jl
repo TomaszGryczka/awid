@@ -1,4 +1,4 @@
-include("graph_nodes.jl")
+include("../graph/graph_nodes.jl")
 
 flatten(x::GraphNode) = BroadcastedOperator(flatten, x)
 forward(::BroadcastedOperator{typeof(flatten)}, x) = reshape(x, length(x))

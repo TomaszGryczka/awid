@@ -1,4 +1,4 @@
-include("graph_nodes.jl")
+include("../graph/graph_nodes.jl")
 
 convolution(x::GraphNode, kernel::GraphNode) = BroadcastedOperator(convolution, x, kernel)
 forward(::BroadcastedOperator{typeof(convolution)}, x, kernel) =

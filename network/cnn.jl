@@ -1,10 +1,10 @@
-include("topological_sorter.jl")
-include("conv_operations.jl")
-include("weight_utils.jl")
-include("backpropagation.jl")
-include("forward.jl")
-include("cross_entropy_loss.jl")
-include("graph.jl")
+include("./graph/topological_sorter.jl")
+include("./training/conv_operations.jl")
+include("./training/weight_utils.jl")
+include("./training/backpropagation.jl")
+include("./training/forward.jl")
+include("./training/cross_entropy_loss.jl")
+include("./graph/graph.jl")
 
 num_of_correct_clasiffications = 0
 num_of_clasiffications = 0
@@ -57,5 +57,6 @@ function test(x, y, kernel_weights, hidden_weights, output_weights)
 		forward!(graph)
 	end
 
+	println("\n")
 	println("Test accuracy: ", num_of_correct_clasiffications/num_of_clasiffications, " (recognized ", num_of_correct_clasiffications, "/", num_of_clasiffications, ")\n")
 end

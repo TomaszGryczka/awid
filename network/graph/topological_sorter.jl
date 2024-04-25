@@ -1,5 +1,5 @@
 include("graph_nodes.jl")
-include("operators_overloading.jl")
+include("../training/operators_overloading.jl")
 
 function visit(node::GraphNode, visited, order)
     if node ∈ visited
