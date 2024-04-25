@@ -15,6 +15,9 @@ relu(x::GraphNode) = BroadcastedOperator(relu, x)
 forward(::BroadcastedOperator{typeof(relu)}, x) = return max.(x, zero(x))
 backward(::BroadcastedOperator{typeof(relu)}, x, g) = return tuple(g .* (x .> 0))
 
+identity(x::GraphNode) = BroadcastedOperator(identity, x)
+forward(::BroadcastedOperator{typeof(identity)}, x) = x
+backward(::BroadcastedOperator{typeof(identity)}, x, g) = tuple(g)
 
 log(x::GraphNode) = ScalarOperator(log, x)
 forward(::ScalarOperator{typeof(log)}, x) = log(x)

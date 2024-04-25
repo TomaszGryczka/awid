@@ -1,96 +1,74 @@
 include("graph_nodes.jl")
 
 convolution(x::GraphNode, kernel::GraphNode) = BroadcastedOperator(convolution, x, kernel)
-forward(::BroadcastedOperator{typeof(convolution)}, x, w) =
+forward(::BroadcastedOperator{typeof(convolution)}, x, kernel) =
     let
+        x = reshape(x, size(x)..., 1, 1)
+        
+        x_height, x_width, channels, _ = size(x)
+        filter_height, filter_width, _, num_of_kernels = size(kernel)
+
         padding = 0
         stride = 1
-        # get dimensions
-        # println("conv ?? x: ", size(x), " w: ", size(w))
-        a, b = size(x)
-        x1 = reshape(x, a , b, 1, 1)
-        (H, W, C, _) = size(x1)
-        (FH, FW, _, K) = size(w)
 
-        # calculate output dimensions
-        out_h = Int(floor((H + 2 * padding - FH) / stride)) + 1
-        out_w = Int(floor((W + 2 * padding - FW) / stride)) + 1
+        feature_map_height = Int(floor((x_height + 2 * padding - filter_height) / stride)) + 1
+        feature_map_width = Int(floor((x_width + 2 * padding - filter_width) / stride)) + 1
 
-        # pad input
-        p = padding
-        x_pad = zeros(H + 2p, W + 2p, C)
-        x_pad[p+1:end-p, p+1:end-p, :] = x1
+        x_with_padding = zeros(x_height + 2 * padding, x_width + 2 * padding, channels)
+        x_with_padding[padding + 1 : end-padding, padding + 1 : end - padding, :] = x
 
-        # initialize output
-        # NOTE!: this is a 4D array, but we only use the first 3 dimensions
-        out = zeros(out_h, out_w, K, 1)
+        output = zeros(feature_map_height, feature_map_width, num_of_kernels, 1)
 
-        # perform convolution
-        for i ∈ 1:out_h
-            for j ∈ 1:out_w
-                # get receptive field
-                r_field =
-                    x_pad[(i-1)*stride+1:(i-1)*stride+FH, (j-1)*stride+1:(j-1)*stride+FW, :, :]
+        for i=1:feature_map_height
+            for j=1:feature_map_width
+                img_portion = x_with_padding[(i - 1) * stride + 1 : (i - 1) * stride + filter_height, (j - 1) * stride + 1 : (j - 1) * stride + filter_width, :, :]
 
-                # flatten receptive field and weights
-                r_field_flat = reshape(r_field, FH * FW * C, :)
-                w_flat = reshape(w, FH * FW * C, K)
+                flatten_img_portion = reshape(img_portion, filter_height * filter_width * channels, :)
+                flatten_kernel = reshape(kernel, filter_height * filter_width * channels, num_of_kernels)
 
-                # calculate output for this location
-                out[i, j, :] = sum(w_flat .* r_field_flat, dims = 1)
+                output[i, j, :] = sum(flatten_kernel .* flatten_img_portion, dims = 1)
             end
         end
-        return out
+        return output
     end
 
-backward(::BroadcastedOperator{typeof(convolution)}, x, w, g) =
+backward(::BroadcastedOperator{typeof(convolution)}, x, kernel, g) =
     let
+        x = reshape(x, size(x)..., 1, 1)
+    
+        x_height, x_width, channels, _ = size(x)
+        (filter_height, filter_width, _, num_of_kernels) = size(kernel)
+
         padding = 0
         stride = 1
-        a, b = size(x)
-        x1 = reshape(x, a , b, 1, 1)
-        # get dimensions
-        (H, W, C, _) = size(x1)
-        (FH, FW, _, K) = size(w)
 
-        # calculate output dimensions
-        out_h = Int(floor((H + 2 * padding - FH) / stride)) + 1
-        out_w = Int(floor((W + 2 * padding - FW) / stride)) + 1
+        feature_map_height = Int(floor((x_height + 2 * padding - filter_height) / stride)) + 1
+        feature_map_width = Int(floor((x_width + 2 * padding - filter_width) / stride)) + 1
 
-        # pad input
-        p = padding
-        x_pad = zeros(H + 2p, W + 2p, C)
-        x_pad[p+1:end-p, p+1:end-p, :] = x1
+        x_with_padding = zeros(x_height + 2 * padding, x_width + 2 * padding, channels)
+        x_with_padding[padding + 1 : end - padding, padding + 1 : end - padding, :] = x
 
-        # initialize gradients
-        gx_pad = zeros(H + 2p, W + 2p, C)
-        gw = zeros(size(w))
+        input_gradient = zeros(x_height + 2 * padding, x_width + 2 * padding, channels)
+        kernel_gradient = zeros(size(kernel))
 
-        # perform backward pass
-        for i ∈ 1:out_h
-            for j ∈ 1:out_w
-                # get receptive field
-                r_field =
-                    x_pad[(i-1)*stride+1:(i-1)*stride+FH, (j-1)*stride+1:(j-1)*stride+FW, :, :]
+        for i=1:feature_map_height
+            for j=1:feature_map_width
+                img_portion = x_with_padding[(i - 1) * stride + 1:(i - 1) * stride + filter_height, (j - 1) * stride + 1 : (j - 1) * stride + filter_width, :, :]
 
-                # flatten receptive field and weights
-                r_field_flat = reshape(r_field, FH * FW * C, :)
-                w_flat = reshape(w, FH * FW * C, K)
+                flatten_img_portion = reshape(img_portion, filter_height * filter_width * channels, :)
+                flatten_kernel = reshape(kernel, filter_height * filter_width * channels, num_of_kernels)
 
-                # calculate gradients for this location
-                dout_local = reshape(g[i, j, :], K, 1)
-                field_dout_prod = r_field_flat * dout_local'
-                field_dout_prod = reshape(field_dout_prod, FH, FW, C, K)
-                gw += field_dout_prod
-                flat_dout_prod = w_flat * dout_local
-                flat_dout_prod = reshape(flat_dout_prod, FH, FW, C, :)
-                gx_pad[(i-1)*stride+1:(i-1)*stride+FH, (j-1)*stride+1:(j-1)*stride+FW, :, :] +=
-                    flat_dout_prod
+                local_gradient = reshape(g[i, j, :], num_of_kernels, 1)
+                gradient_product = flatten_img_portion * local_gradient'
+                gradient_product = reshape(gradient_product, filter_height, filter_width, channels, num_of_kernels)
+                kernel_gradient += gradient_product
+                flatten_gradient_product = flatten_kernel * local_gradient
+                flatten_gradient_product = reshape(flatten_gradient_product, filter_height, filter_width, channels, :)
+                input_gradient[(i - 1) * stride + 1 : (i - 1) * stride + filter_height, (j - 1) * stride + 1 : (j - 1) * stride + filter_width, :, :] += flatten_gradient_product
             end
         end
 
-        # remove padding from gx
-        gx = gx_pad[p+1:end-p, p+1:end-p, :]
+        x_gradient = input_gradient[padding + 1 : end - padding, padding + 1 : end-padding, :]
 
-        return tuple(gx, gw)
+        return tuple(x_gradient, kernel_gradient)
     end

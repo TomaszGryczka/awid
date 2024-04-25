@@ -33,7 +33,7 @@ function build_graph(x, y, kernel_weights, hidden_weights, output_weights)
 	l2 = maxpool2d(l1)
 	l3 = flatten(l2)
 	l4 = dense(l3, hidden_weights) |> relu
-	l5 = dense(l4, output_weights)
+	l5 = dense(l4, output_weights) |> identity
 
 	e = cross_entropy_loss(l5, y)
 
