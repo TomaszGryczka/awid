@@ -12,19 +12,19 @@ num_of_clasiffications = 0
 function train(x, y, epochs, batch_size, learining_rate)
 	kernel_weights, hidden_weights, output_weights = init_weights()
 
+	num_of_samples = size(x, 3)
+	train_x = Constant(x[:, :, 1])
+	train_y = Constant(y[1, :])
+
+	graph = build_graph(train_x, train_y, kernel_weights, hidden_weights, output_weights)
+
 	@time for i=1:epochs
 		
 		epoch_loss = 0.0
-		num_of_samples = size(x, 3)
-
+	
 		global num_of_correct_clasiffications = 0
 		global num_of_clasiffications = 0
-
-		train_x = Constant(x[:, :, 1])
-		train_y = Constant(y[1, :])
-
-		graph = build_graph(train_x, train_y, kernel_weights, hidden_weights, output_weights)
-		
+	
 		for j=2:num_of_samples	
 			epoch_loss += forward!(graph)
 			backward!(graph)
