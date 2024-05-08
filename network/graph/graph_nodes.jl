@@ -3,7 +3,7 @@ import Base: show, summary
 abstract type GraphNode end
 abstract type Operator <: GraphNode end
 
-struct Constant{T} <: GraphNode
+mutable struct Constant{T} <: GraphNode
     output :: T
 end
 

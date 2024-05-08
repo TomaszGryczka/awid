@@ -12,10 +12,10 @@ x_test = reshape(test_data.features, 28, 28, :)
 y_test = Flux.onehotbatch(test_data.targets, 0:9)
 
 # reduce number of samples for testing
-# x_train = x_train[:, :, 1:5000]
-# y_train = y_train[:, 1:5000]
-# x_test = x_test[:, :, 1:5000]
-# y_test = y_test[:, 1:5000]
+# x_train = x_train[:, :, 1:500]
+# y_train = y_train[:, 1:500]
+# x_test = x_test[:, :, 1:500]
+# y_test = y_test[:, 1:500]
 
 # training
 kernel_weights, hidden_weights, output_weights =  train(x_train, y_train', 3, 100, 1e-2)

@@ -5,10 +5,9 @@ update!(node::GraphNode, gradient) = let
         if isnothing(node.batch_gradient)
             node.batch_gradient = gradient
         else
-            node.batch_gradient += gradient
+            node.batch_gradient .+= gradient
         end
     end
-    
 end
 
 function backward!(node::Constant) end

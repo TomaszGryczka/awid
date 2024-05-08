@@ -19,19 +19,22 @@ function train(x, y, epochs, batch_size, learining_rate)
 
 		global num_of_correct_clasiffications = 0
 		global num_of_clasiffications = 0
-		
-		for j=1:num_of_samples
-			train_x = Constant(x[:, :, j])
-			train_y = Constant(y[j, :])
 
-			graph = build_graph(train_x, train_y, kernel_weights, hidden_weights, output_weights)
-	
+		train_x = Constant(x[:, :, 1])
+		train_y = Constant(y[1, :])
+
+		graph = build_graph(train_x, train_y, kernel_weights, hidden_weights, output_weights)
+		
+		for j=2:num_of_samples	
 			epoch_loss += forward!(graph)
 			backward!(graph)
 			
 			if j % batch_size == 0
 				update_weights!(graph, learining_rate, batch_size)
 			end
+
+			train_x.output = x[:, :, j]
+			train_y.output = y[j, :]
 		end
 		
 		println("Epoch: ", i,". Average epoch loss: ", epoch_loss  / num_of_samples)
@@ -48,13 +51,16 @@ function test(x, y, kernel_weights, hidden_weights, output_weights)
 	global num_of_correct_clasiffications = 0
 	global num_of_clasiffications = 0
 
-	for j=1:num_of_samples
-		train_x = Constant(x[:, :, j])
-		train_y = Constant(y[j, :])
+	train_x = Constant(x[:, :, 1])
+	train_y = Constant(y[1, :])
 
-		graph = build_graph(train_x, train_y, kernel_weights, hidden_weights, output_weights)
+	graph = build_graph(train_x, train_y, kernel_weights, hidden_weights, output_weights)
 
+	for j=2:num_of_samples
 		forward!(graph)
+
+		train_x.output = x[:, :, j]
+		train_y.output = y[j, :]
 	end
 
 	println("\n")
