@@ -70,7 +70,7 @@ backward(::BroadcastedOperator{typeof(convolution)}, x, kernel, g) =
 
         x_gradient = input_gradient[padding + 1 : end - padding, padding + 1 : end-padding, :]
 
-        return tuple(x_gradient, kernel_gradient)
+        return x_gradient, kernel_gradient
     end
 
 maxpool2d(x::GraphNode) = BroadcastedOperator(maxpool2d, x)
@@ -100,6 +100,6 @@ forward(node::BroadcastedOperator{typeof(maxpool2d)}, x) =
 backward(node::BroadcastedOperator{typeof(maxpool2d)}, x, g) =
     let
         output = zeros(size(x))
-        output[node.cache] = vcat(g...)
-        tuple(output)
+        output[node.cache] = g
+        output
     end

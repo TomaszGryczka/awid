@@ -16,5 +16,5 @@ backward(node::BroadcastedOperator{typeof(cross_entropy_loss)}, y_hat, y, g) =
     let
         y_hat = y_hat .- maximum(y_hat)
         y_hat = exp.(y_hat) ./ sum(exp.(y_hat))
-        return tuple(g .* (y_hat - y))
+        return tuple(g .* (y_hat .- y))
     end
