@@ -81,7 +81,7 @@ forward(node::BroadcastedOperator{typeof(maxpool2d)}, x) =
         output_height, output_width = trunc(Int, height / 2), trunc(Int, width / 2)
         output = zeros(output_height, output_width, channels)
 
-        indices = CartesianIndex{3}[]
+        node.cache = CartesianIndex{3}[]
 
         for i = 1 : channels
             for j = 1 : output_height
@@ -91,11 +91,10 @@ forward(node::BroadcastedOperator{typeof(maxpool2d)}, x) =
 
                     idx, idy = maxValIndices[1]+2*j- 1 - 1, maxValIndices[2] + 2 * k - 1 - 1
                     
-                    push!(indices, CartesianIndex(idx, idy, i))
+                    push!(node.cache, CartesianIndex(idx, idy, i))
                 end
             end
         end
-        node.cache = indices
         output
     end
 backward(node::BroadcastedOperator{typeof(maxpool2d)}, x, g) =
