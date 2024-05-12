@@ -2,8 +2,7 @@ include("graph_nodes.jl")
 include("../training/operators_overloading.jl")
 
 function visit(node::GraphNode, visited, order)
-    if node ∈ visited
-    else
+    if node ∉ visited
         push!(visited, node)
         push!(order, node)
     end
@@ -11,8 +10,7 @@ function visit(node::GraphNode, visited, order)
 end
 
 function visit(node::Operator, visited, order)
-    if node ∈ visited
-    else
+    if node ∉ visited
         push!(visited, node)
         for input in node.inputs
             visit(input, visited, order)

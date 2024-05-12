@@ -6,8 +6,11 @@ include("./training/forward.jl")
 include("./training/cross_entropy_loss.jl")
 include("./graph/graph.jl")
 
+using Plots
+
 num_of_correct_clasiffications = 0
 num_of_clasiffications = 0
+global_epoch_loss = Vector{Float64}()
 
 function train(x, y, epochs, batch_size, learining_rate)
 	kernel_weights, hidden_weights, output_weights = init_weights()
@@ -21,16 +24,21 @@ function train(x, y, epochs, batch_size, learining_rate)
 	@time for i=1:epochs
 		
 		epoch_loss = 0.0
+		iter_loss = 0.0
 	
 		global num_of_correct_clasiffications = 0
 		global num_of_clasiffications = 0
 	
-		for j=2:num_of_samples	
-			epoch_loss += forward!(graph)
+		for j=2:num_of_samples
+			one_loss = forward!(graph)
+			iter_loss += one_loss
+			epoch_loss += one_loss
 			backward!(graph)
 			
 			if j % batch_size == 0
 				update_weights!(graph, learining_rate, batch_size)
+				push!(global_epoch_loss, iter_loss / batch_size)
+				iter_loss = 0.0
 			end
 
 			train_x.output = x[:, :, j]
@@ -40,6 +48,9 @@ function train(x, y, epochs, batch_size, learining_rate)
 		println("Epoch: ", i,". Average epoch loss: ", epoch_loss  / num_of_samples)
 		println("Train accuracy: ", num_of_correct_clasiffications/num_of_clasiffications, " (recognized ", num_of_correct_clasiffications, "/", num_of_clasiffications, ")\n")
 	end
+
+	plt = plot(global_epoch_loss, label="Loss", xlabel="Iteration", ylabel="Loss")
+	savefig(plt, "plot.png")
 
 	return kernel_weights, hidden_weights, output_weights
 end
