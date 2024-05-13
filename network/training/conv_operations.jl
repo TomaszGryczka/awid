@@ -26,43 +26,25 @@ forward(::BroadcastedOperator{typeof(convolution)}, x, kernel) =
 
 backward(::BroadcastedOperator{typeof(convolution)}, x, kernel, g) =
     let
-        x = reshape(x, size(x)..., 1, 1)
-    
-        x_height, x_width, num_of_channels, _ = size(x)
-        (filter_height, filter_width, _, num_of_kernels) = size(kernel)
+        x_height, x_width = size(x)
+        filter_height, filter_width, _, num_of_kernels = size(kernel)
+        gradient_height, gradient_width, _,  = size(g)
 
-        padding = 0
-        stride = 1
+        output_height = x_height - filter_height + 1
+        output_width = x_width - filter_width + 1
 
-        feature_map_height = Int(floor((x_height + 2 * padding - filter_height) / stride)) + 1
-        feature_map_width = Int(floor((x_width + 2 * padding - filter_width) / stride)) + 1
+        dx = zeros(Float32, x_height, x_width)
+        dkernel = zeros(Float32, filter_height * filter_width, num_of_kernels)
 
-        x_with_padding = zeros(x_height + 2 * padding, x_width + 2 * padding, num_of_channels)
-        x_with_padding[padding + 1 : end - padding, padding + 1 : end - padding, :] = x
+        img_col = img2col_backpropagation(x, filter_height, filter_width, output_height, output_width)
+        g_col = reshape(g, output_height * output_width, num_of_kernels)
+        dkernel .+= img_col * g_col
+        
+        dim_col = reshape(g, gradient_height*gradient_width, num_of_kernels) * reshape(kernel, filter_height*filter_width, num_of_kernels)'
+        col2img(dx, dim_col, output_height, output_width, filter_height, filter_width)
 
-        input_gradient = zeros(x_height + 2 * padding, x_width + 2 * padding, num_of_channels)
-        kernel_gradient = zeros(size(kernel))
-
-        for i=1:feature_map_height
-            for j=1:feature_map_width
-                img_portion = x_with_padding[(i - 1) * stride + 1:(i - 1) * stride + filter_height, (j - 1) * stride + 1 : (j - 1) * stride + filter_width, :, :]
-
-                flatten_img_portion = reshape(img_portion, filter_height * filter_width * num_of_channels, :)
-                flatten_kernel = reshape(kernel, filter_height * filter_width * num_of_channels, num_of_kernels)
-
-                local_gradient = reshape(g[i, j, :], num_of_kernels, 1)
-                gradient_product = flatten_img_portion * local_gradient'
-                gradient_product = reshape(gradient_product, filter_height, filter_width, num_of_channels, num_of_kernels)
-                kernel_gradient += gradient_product
-                flatten_gradient_product = flatten_kernel * local_gradient
-                flatten_gradient_product = reshape(flatten_gradient_product, filter_height, filter_width, num_of_channels, :)
-                input_gradient[(i - 1) * stride + 1 : (i - 1) * stride + filter_height, (j - 1) * stride + 1 : (j - 1) * stride + filter_width, :, :] += flatten_gradient_product
-            end
-        end
-
-        x_gradient = input_gradient[padding + 1 : end - padding, padding + 1 : end-padding, :]
-
-        return x_gradient, kernel_gradient
+        dkernel = reshape(dkernel, filter_height, filter_width, 1, num_of_kernels)
+        return dx, dkernel
     end
 
 maxpool2d(x::GraphNode) = BroadcastedOperator(maxpool2d, x)
@@ -104,11 +86,32 @@ function img2col(img, kernel_height, kernel_width, output_height, output_width)
 
     for (i, value) in enumerate(indx)
         for j = 0:kernel_width-1
-            @views output[(i - 1) * kernel_height * kernel_width + j * kernel_height + 1 : (i - 1) * kernel_height * kernel_width + (j + 1) * kernel_height] = 
+            output[(i - 1) * kernel_height * kernel_width + j * kernel_height + 1 : (i - 1) * kernel_height * kernel_width + (j + 1) * kernel_height] = 
             img[value + j * img_height : value + kernel_height - 1 + j * img_height]
         end
     end
 
     return output
+end
+
+function img2col_backpropagation(img, kernel_height, kernel_width, output_height, output_width)
+    output = zeros(Float32, kernel_height * kernel_width, output_height * output_width)
+
+    for i = 1:output_height
+        for j = 1:output_width
+            output[:, (i - 1) * output_width + j] .= reshape(img[i:i + kernel_height - 1, j:j + kernel_width - 1], kernel_height * kernel_width)
+        end
+    end
+    return output
+end
+
+function col2img(dx, col, output_height, output_width, filter_height, filter_width)
+    for i=1:output_height*output_width-1
+        row = col[i, :]
+        h_index = div(i, output_width) + 1
+        w_index = mod(i, output_width) + 1
+        dx[h_index:h_index+filter_height-1, w_index:w_index+filter_width-1] .+= reshape(row, filter_height, filter_width)
+    end
+    return dx
 end
     
