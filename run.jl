@@ -18,7 +18,7 @@ y_test = Flux.onehotbatch(test_data.targets, 0:9)
 # y_test = y_test[:, 1:500]
 
 # training
-kernel_weights, hidden_weights, output_weights =  train(x_train, y_train', 3, 100, 1e-2)
+kernel_weights, hidden_weights, output_weights = train(x_train, y_train', 3, 100, 1e-2)
 
 # testing
 test(x_test, y_test', kernel_weights, hidden_weights, output_weights)

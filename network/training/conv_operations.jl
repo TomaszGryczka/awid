@@ -40,8 +40,8 @@ backward(::BroadcastedOperator{typeof(convolution)}, x, kernel, g) =
         g_col = reshape(g, output_height * output_width, num_of_kernels)
         dkernel .+= img_col * g_col
         
-        dim_col = reshape(g, gradient_height*gradient_width, num_of_kernels) * reshape(kernel, filter_height*filter_width, num_of_kernels)'
-        col2img(dx, dim_col, output_height, output_width, filter_height, filter_width)
+        dimg_col = reshape(g, gradient_height*gradient_width, num_of_kernels) * reshape(kernel, filter_height*filter_width, num_of_kernels)'
+        col2img(dx, dimg_col, output_height, output_width, filter_height, filter_width)
 
         dkernel = reshape(dkernel, filter_height, filter_width, 1, num_of_kernels)
         return dx, dkernel
@@ -86,7 +86,7 @@ function img2col(img, kernel_height, kernel_width, output_height, output_width)
 
     for (i, value) in enumerate(indx)
         for j = 0:kernel_width-1
-            output[(i - 1) * kernel_height * kernel_width + j * kernel_height + 1 : (i - 1) * kernel_height * kernel_width + (j + 1) * kernel_height] = 
+            @views output[(i - 1) * kernel_height * kernel_width + j * kernel_height + 1 : (i - 1) * kernel_height * kernel_width + (j + 1) * kernel_height] = 
             img[value + j * img_height : value + kernel_height - 1 + j * img_height]
         end
     end
@@ -99,19 +99,18 @@ function img2col_backpropagation(img, kernel_height, kernel_width, output_height
 
     for i = 1:output_height
         for j = 1:output_width
-            output[:, (i - 1) * output_width + j] .= reshape(img[i:i + kernel_height - 1, j:j + kernel_width - 1], kernel_height * kernel_width)
+            @views output[:, (i - 1) * output_width + j] .= reshape(img[i:i + kernel_height - 1, j:j + kernel_width - 1], kernel_height * kernel_width)
         end
     end
     return output
 end
 
-function col2img(dx, col, output_height, output_width, filter_height, filter_width)
+function col2img(dx, dimg_col, output_height, output_width, filter_height, filter_width)
     for i=1:output_height*output_width-1
-        row = col[i, :]
+        row = dimg_col[i, :]
         h_index = div(i, output_width) + 1
         w_index = mod(i, output_width) + 1
         dx[h_index:h_index+filter_height-1, w_index:w_index+filter_width-1] .+= reshape(row, filter_height, filter_width)
     end
-    return dx
 end
     
