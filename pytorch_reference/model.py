@@ -10,7 +10,7 @@ class ReferenceModel(nn.Module):
         self.d1 = nn.Linear(1014, 84)
         self.d2 = nn.Linear(84, 10)
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
         x = x.view(-1, 1014)
         x = F.relu(self.d1(x))
         x = self.d2(x)
